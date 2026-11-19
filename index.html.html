@@ -1,0 +1,1025 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Direction Finder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<style>
+  /* Layout: a Figma-style 390x844 phone frame centred on a soft studio ground.
+     Inside, a deep-blue card world borrowed from the cinematic hero reference:
+     silver type, tactile white buttons, glass badges, film grain, masked grid. */
+  :root {
+    --studio-bg: #eceff6;
+    --studio-glow: #ffffff;
+    --studio-ink: #1b2440;
+    --studio-ink-2: #5b6682;
+
+    --navy-900: #0a101d;
+    --navy-700: #162c6d;
+    --text: #f4f6ff;
+    --text-2: rgba(214, 224, 255, 0.74);
+    --text-3: rgba(190, 205, 245, 0.52);
+    --blue: #5b8cff;
+    --indigo: #8b7bff;
+    --cyan: #22d3ee;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --glass: rgba(255, 255, 255, 0.06);
+    --glass-line: rgba(255, 255, 255, 0.11);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --studio-bg: #0b0f1a;
+      --studio-glow: #19223f;
+      --studio-ink: #e8ecfa;
+      --studio-ink-2: #8f9bbd;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --studio-bg: #0b0f1a;
+    --studio-glow: #19223f;
+    --studio-ink: #e8ecfa;
+    --studio-ink-2: #8f9bbd;
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--studio-bg);
+    background-image: radial-gradient(ellipse 80% 55% at 50% 28%, var(--studio-glow), transparent 72%);
+    background-repeat: no-repeat;
+    color: var(--studio-ink);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .font-display { font-family: "Space Grotesk", Inter, system-ui, sans-serif; }
+
+  .studio {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding-block: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .frame-label {
+    display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden;
+    font: 600 12px/1 Inter, system-ui, sans-serif; letter-spacing: 0.04em; color: var(--studio-ink-2);
+  }
+  .frame-label b { color: var(--studio-ink); font-weight: 600; }
+
+  /* ---------- device ---------- */
+  .device {
+    position: relative; width: 390px; height: 844px; border-radius: 44px; background: #111;
+    box-shadow: inset 0 0 0 2px #52525b, inset 0 0 0 7px #000,
+      0 34px 60px -22px rgba(10, 16, 29, 0.45), 0 12px 22px -8px rgba(10, 16, 29, 0.3);
+  }
+  .hw { position: absolute; width: 3px; border-radius: 2px 0 0 2px; background: linear-gradient(90deg, #404040, #171717); left: -3px; }
+  .hw.r { left: auto; right: -3px; border-radius: 0 2px 2px 0; transform: scaleX(-1); }
+  .device .screen {
+    position: absolute; inset: 8px; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column;
+    background: linear-gradient(145deg, var(--navy-700) 0%, var(--navy-900) 62%);
+    color: var(--text); font-size: 14px; line-height: 1.4;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
+  }
+  .device .screen::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.5;
+    background-size: 44px 44px;
+    background-image: linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+    -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, transparent 70%);
+  }
+  .device .screen::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 40; opacity: 0.05; mix-blend-mode: overlay;
+    background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');
+  }
+  .glare { position: absolute; inset: 0; z-index: 45; pointer-events: none; background: linear-gradient(110deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0) 42%); }
+  .status {
+    position: relative; z-index: 50; flex: none; height: 50px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 26px; font: 600 14px/1 Inter, system-ui, sans-serif;
+  }
+  .status .icons { display: flex; gap: 6px; align-items: center; }
+  .island {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 104px; height: 30px; background: #000;
+    border-radius: 999px; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px;
+    box-shadow: inset 0 -1px 2px rgba(255,255,255,0.1);
+  }
+  .island i { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,0.8); }
+  .home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 124px; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.28); z-index: 60; pointer-events: none; }
+  .device .app { position: relative; z-index: 3; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .device .scroll {
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .device .scroll::-webkit-scrollbar { display: none; }
+  .device .foot {
+    flex: none; padding: 14px 20px 26px;
+    background: linear-gradient(to top, rgba(10,16,29,0.96) 62%, rgba(10,16,29,0));
+  }
+
+  /* ---------- type & surfaces ---------- */
+  .t-silver {
+    background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    filter: drop-shadow(0 8px 18px rgba(0,0,0,0.55));
+  }
+  .device .eyebrow { font: 700 10px/1.2 Inter, system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); }
+  .device .glass {
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+    border: 1px solid var(--glass-line);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.12), inset 0 -1px 1px rgba(0,0,0,0.4), 0 12px 24px -8px rgba(0,0,0,0.45);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+  .device .btn-light {
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 56px; border-radius: 20px;
+    font: 700 16px/1 "Space Grotesk", Inter, system-ui, sans-serif; letter-spacing: -0.01em; color: #0f172a; cursor: pointer;
+    background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.1), 0 12px 24px -4px rgba(0,0,0,0.5), inset 0 1px 1px #fff, inset 0 -3px 6px rgba(0,0,0,0.06);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  .device .btn-light:hover:not(:disabled) { transform: translateY(-2px); }
+  .device .btn-light:active:not(:disabled) { transform: translateY(1px); background: linear-gradient(180deg, #f1f5f9, #e2e8f0); }
+  .device .btn-light:disabled { background: rgba(255,255,255,0.08); color: var(--text-3); box-shadow: inset 0 1px 1px rgba(255,255,255,0.08); cursor: not-allowed; }
+  .device .icon-btn {
+    width: 40px; height: 40px; flex: none; border-radius: 14px; display: grid; place-items: center; color: var(--text); cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-line); transition: background 0.2s, transform 0.2s;
+  }
+  .device .icon-btn:hover { background: rgba(255,255,255,0.12); }
+  .device .icon-btn:active { transform: scale(0.94); }
+  .device :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .device .bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  .device .bar > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--cyan)); transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1); }
+
+  /* interest pills */
+  .device .pill {
+    --h: var(--blue); display: flex; align-items: center; gap: 10px; min-width: 0; text-align: left; padding: 11px 12px; border-radius: 16px; cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-line); color: var(--text); font: 600 13px/1.2 Inter, system-ui, sans-serif;
+    transition: background 0.25s, border-color 0.25s, box-shadow 0.25s, transform 0.25s, opacity 0.25s;
+  }
+  .device .pill .ico {
+    width: 34px; height: 34px; flex: none; border-radius: 11px; display: grid; place-items: center; color: var(--h);
+    background: color-mix(in srgb, var(--h) 16%, transparent); border: 1px solid color-mix(in srgb, var(--h) 32%, transparent);
+    transition: background 0.25s, color 0.25s;
+  }
+  .device .pill:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(255,255,255,0.28); }
+  .device .pill[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--h) 22%, transparent); border-color: var(--h);
+    box-shadow: 0 0 0 1px var(--h), 0 10px 26px -10px var(--h);
+  }
+  .device .pill[aria-pressed="true"] .ico { background: var(--h); color: var(--navy-900); }
+  .device .pill:disabled { opacity: 0.38; cursor: not-allowed; }
+  .device .pill.wide { grid-column: span 2; }
+
+  /* quiz options */
+  .device .opt {
+    width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; padding: 13px 14px; border-radius: 16px; cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-line); color: var(--text); font: 500 14px/1.35 Inter, system-ui, sans-serif;
+    transition: background 0.25s, border-color 0.25s, opacity 0.25s, transform 0.25s;
+  }
+  .device .opt .key {
+    width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center;
+    font: 700 12px/1 Inter, system-ui, sans-serif; background: rgba(255,255,255,0.08); color: var(--text-2);
+  }
+  .device .opt[data-s="idle"]:hover { border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
+  .device .opt[data-s="correct"] { background: rgba(52,211,153,0.16); border-color: var(--emerald); cursor: default; }
+  .device .opt[data-s="correct"] .key { background: var(--emerald); color: var(--navy-900); }
+  .device .opt[data-s="wrong"] { background: rgba(251,113,133,0.16); border-color: var(--rose); cursor: default; }
+  .device .opt[data-s="wrong"] .key { background: var(--rose); color: var(--navy-900); }
+  .device .opt[data-s="dim"] { opacity: 0.4; cursor: default; }
+
+  /* results */
+  .device .dcard { border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .device .dcard-top { border-color: rgba(91,140,255,0.55); box-shadow: 0 0 0 1px rgba(91,140,255,0.35), 0 18px 40px -16px rgba(91,140,255,0.55), inset 0 1px 1px rgba(255,255,255,0.14); }
+  .device .rank {
+    width: 34px; height: 34px; flex: none; border-radius: 12px; display: grid; place-items: center;
+    font: 700 16px/1 "Space Grotesk", Inter, sans-serif; color: var(--navy-900); background: linear-gradient(180deg, #fff, #c9d3f5);
+  }
+  .device .label { font: 700 10px/1 Inter, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+  .device .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .device .chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 999px; font: 600 11px/1.1 Inter, system-ui, sans-serif;
+    color: var(--text-2); background: rgba(255,255,255,0.05); border: 1px solid var(--glass-line);
+  }
+  .device .chip.on { color: #fff; background: rgba(91,140,255,0.24); border-color: rgba(91,140,255,0.7); }
+  .device .chip.lit { color: var(--navy-900); background: var(--amber); border-color: var(--amber); }
+  .device .chip.off { opacity: 0.45; }
+  .device .quest {
+    border-radius: 16px; padding: 12px; display: flex; gap: 10px;
+    background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(251,191,36,0.06)); border: 1px solid rgba(251,191,36,0.5);
+  }
+  .device .quest .qi { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--amber); color: var(--navy-900); }
+  .ring-bg { stroke: rgba(255,255,255,0.1); }
+  .ring-fg { stroke: var(--amber); stroke-linecap: round; transition: stroke-dashoffset 1s cubic-bezier(0.25, 1, 0.5, 1); }
+
+  /* welcome orbit */
+  .device .orb {
+    position: absolute; width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center;
+  }
+
+  /* chat */
+  .device .bub { max-width: 86%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .device .bub.ai { border-bottom-left-radius: 6px; }
+  .device .bub.me { margin-left: auto; color: #fff; border-bottom-right-radius: 6px; background: linear-gradient(135deg, #3a6df0, #5b8cff); box-shadow: 0 10px 22px -10px rgba(91,140,255,0.8); }
+  .device .dots { display: inline-flex; gap: 4px; padding: 3px 0; }
+  .device .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-2); animation: blink 1.2s infinite ease-in-out; }
+  .device .dots span:nth-child(2) { animation-delay: 0.15s; }
+  .device .dots span:nth-child(3) { animation-delay: 0.3s; }
+  .device .qchips { display: flex; gap: 8px; overflow-x: auto; padding: 0 20px 10px; scrollbar-width: none; }
+  .device .qchips::-webkit-scrollbar { display: none; }
+  .device .qchip {
+    flex: none; padding: 8px 12px; border-radius: 999px; cursor: pointer; font: 600 12px/1.1 Inter, system-ui, sans-serif; color: var(--text);
+    background: rgba(91,140,255,0.16); border: 1px solid rgba(91,140,255,0.5); transition: background 0.2s;
+  }
+  .device .qchip:hover:not(:disabled) { background: rgba(91,140,255,0.3); }
+  .device .qchip:disabled { opacity: 0.45; cursor: not-allowed; }
+  .device .field {
+    flex: 1; min-width: 0; height: 46px; padding: 0 16px; border-radius: 999px; color: var(--text); font: 500 14px/1 Inter, system-ui, sans-serif;
+    background: rgba(255,255,255,0.08); border: 1px solid var(--glass-line);
+  }
+  .device .field::placeholder { color: var(--text-3); }
+  .device .send {
+    width: 46px; height: 46px; flex: none; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #0f172a;
+    background: linear-gradient(180deg, #fff, #e2e8f0); box-shadow: 0 8px 18px -6px rgba(0,0,0,0.6); transition: transform 0.2s, opacity 0.2s;
+  }
+  .device .send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .device .send:active:not(:disabled) { transform: scale(0.94); }
+
+  @keyframes enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .enter { animation: enter 0.4s cubic-bezier(0.25, 1, 0.5, 1) both; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  .float { animation: float 5s ease-in-out infinite; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .enter, .float, .device .dots span { animation: none; }
+    .device .bar > i, .ring-fg { transition: none; }
+  }
+</style>
+
+<div id="root"></div>
+
+<script id="logic">
+const DATA = {
+  "directions": [
+    {
+      "id": "tech-builder",
+      "name": "Tech & Game Builder",
+      "tagline": "You enjoy figuring out how apps, games, and code work under the hood.",
+      "interests": ["Coding & Tech", "Gaming", "Puzzles & Logic"],
+      "strength_tag": "Logical & Algorithmic Thinking",
+      "future_streams": ["Science (PCM)", "Computer Science / AI"],
+      "cool_careers": ["Game Developer", "AI Engineer", "Cybersecurity Analyst", "Robotics Engineer"],
+      "weekend_quest": "Build a simple playable game in Scratch or code a 10-line Python trivia quiz."
+    },
+    {
+      "id": "visual-creator",
+      "name": "Visual Storyteller & Designer",
+      "tagline": "You notice colors, layouts, animations, and love making things look awesome.",
+      "interests": ["Art & Design", "Videos & Animation", "Gaming"],
+      "strength_tag": "Visual & Spatial Creativity",
+      "future_streams": ["Humanities + Fine Arts", "Design & Multimedia", "Any Stream + Portfolio"],
+      "cool_careers": ["UI/UX App Designer", "3D Animator", "Architect", "Product Designer"],
+      "weekend_quest": "Redesign the home screen of your favorite mobile app on paper or in Canva."
+    },
+    {
+      "id": "bio-health",
+      "name": "Body, Brain & Nature Explorer",
+      "tagline": "You are curious about how humans, animals, medicine, or the brain work.",
+      "interests": ["Science & Experiments", "Animals & Nature", "Helping People"],
+      "strength_tag": "Scientific Observation & Empathy",
+      "future_streams": ["Science (PCB)", "Psychology & Health Sciences"],
+      "cool_careers": ["Doctor / Surgeon", "Clinical Psychologist", "Wildlife Biologist", "Sports Scientist"],
+      "weekend_quest": "Track your sleep, water, and focus levels for 3 days like a real health scientist."
+    },
+    {
+      "id": "young-founder",
+      "name": "Young Entrepreneur & Leader",
+      "tagline": "You love leading teams, debating ideas, or spotting ways to solve everyday problems.",
+      "interests": ["Business & Money", "Debating & Speaking", "Leading Teams"],
+      "strength_tag": "Strategic & Persuasive Thinking",
+      "future_streams": ["Commerce with Math", "Humanities + Economics"],
+      "cool_careers": ["Startup Founder", "Product Manager", "Financial Strategist", "Marketing Director"],
+      "weekend_quest": "Spot 3 annoying problems at school and sketch a 1-page mini business idea to fix one."
+    },
+    {
+      "id": "wordsmith-media",
+      "name": "Storyteller, Journalist & Content Creator",
+      "tagline": "You love writing stories, explaining cool facts, or making podcasts and videos.",
+      "interests": ["Writing & Reading", "Videos & Animation", "Debating & Speaking"],
+      "strength_tag": "Verbal & Communication Strength",
+      "future_streams": ["Humanities / Arts", "Mass Communication & Media"],
+      "cool_careers": ["Journalist", "Film Director", "Screenwriter", "Science Communicator"],
+      "weekend_quest": "Write a 300-word review of your favorite movie or record a 2-minute explainer video."
+    },
+    {
+      "id": "machine-maker",
+      "name": "Hands-On Engineer & Inventor",
+      "tagline": "You like taking gadgets apart, building models, and seeing real-world physics in action.",
+      "interests": ["Building & Gadgets", "Science & Experiments", "Puzzles & Logic"],
+      "strength_tag": "Mechanical & Practical Problem-Solving",
+      "future_streams": ["Science (PCM)", "Mechanical / Aerospace / Electronics"],
+      "cool_careers": ["Aerospace Engineer", "EV / Automotive Designer", "Hardware Inventor", "Civil Architect"],
+      "weekend_quest": "Build a working catapult, bridge, or mini solar circuit using household items."
+    },
+    {
+      "id": "earth-guardian",
+      "name": "Climate, Space & Earth Explorer",
+      "tagline": "You care about space, oceans, clean energy, and protecting the planet.",
+      "interests": ["Animals & Nature", "Science & Experiments", "Space & Astronomy"],
+      "strength_tag": "Systems & Environmental Curiosity",
+      "future_streams": ["Science (PCM or PCB)", "Geography & Environmental Studies"],
+      "cool_careers": ["Astrophysicist", "Climate Scientist", "Renewable Energy Engineer", "Marine Biologist"],
+      "weekend_quest": "Use a free stargazing app tonight to spot 3 constellations and a planet."
+    },
+    {
+      "id": "law-society",
+      "name": "Justice, History & Society Defender",
+      "tagline": "You care about fairness, history, world events, and standing up for people.",
+      "interests": ["Debating & Speaking", "History & World", "Helping People"],
+      "strength_tag": "Critical Reasoning & Ethical Analysis",
+      "future_streams": ["Humanities (Political Science, History, Legal Studies)"],
+      "cool_careers": ["Lawyer / Judge", "Civil Services Officer", "Diplomat", "Policy Researcher"],
+      "weekend_quest": "Pick a rule at school or in your city and write arguments both FOR and AGAINST it."
+    }
+  ],
+  "gk_quiz": [
+    {
+      "id": 1,
+      "category": "Logic & Patterns",
+      "question": "A bat and a ball cost ₹110 in total. The bat costs ₹100 more than the ball. How much does the ball cost?",
+      "options": ["₹10", "₹5", "₹15", "₹1"],
+      "answer": "₹5",
+      "tests_strength": "Logical & Algorithmic Thinking"
+    },
+    {
+      "id": 2,
+      "category": "Science & Space GK",
+      "question": "Which planet in our solar system spins clockwise (opposite to most other planets)?",
+      "options": ["Mars", "Venus", "Jupiter", "Neptune"],
+      "answer": "Venus",
+      "tests_strength": "Scientific Observation & Curiosity"
+    },
+    {
+      "id": 3,
+      "category": "World & Society GK",
+      "question": "Which international agreement was signed in 2015 by nearly 200 countries to fight climate change?",
+      "options": ["The Kyoto Protocol", "The Paris Agreement", "The Geneva Convention", "The Montreal Pact"],
+      "answer": "The Paris Agreement",
+      "tests_strength": "Critical Reasoning & World Awareness"
+    },
+    {
+      "id": 4,
+      "category": "Visual & Lateral Thinking",
+      "question": "If you are designing a mobile app for grandparents, what is the MOST important first step?",
+      "options": ["Add cool 3D animations", "Talk to grandparents to see what confuses them", "Use tiny stylish fonts", "Add 20 buttons on the home screen"],
+      "answer": "Talk to grandparents to see what confuses them",
+      "tests_strength": "Visual & User-Centered Creativity"
+    },
+    {
+      "id": 5,
+      "category": "Strategy & Economics GK",
+      "question": "If everyone wants to buy mangoes during a heatwave, but heavy rain destroys half the mango crop, what usually happens to mango prices?",
+      "options": ["Prices drop", "Prices stay the same", "Prices go up", "Mangoes become free"],
+      "answer": "Prices go up",
+      "tests_strength": "Strategic & Persuasive Thinking"
+    }
+  ]
+};
+
+/* Quiz strengths do not share names with the direction strength tags, so each
+   quiz strength is linked to the directions it supports (2 = main, 1 = partial). */
+const STRENGTH_LINKS = {
+  'Logical & Algorithmic Thinking': { 'tech-builder': 2, 'machine-maker': 1 },
+  'Scientific Observation & Curiosity': { 'bio-health': 2, 'earth-guardian': 2, 'machine-maker': 1 },
+  'Critical Reasoning & World Awareness': { 'law-society': 2, 'wordsmith-media': 1 },
+  'Visual & User-Centered Creativity': { 'visual-creator': 2, 'tech-builder': 1 },
+  'Strategic & Persuasive Thinking': { 'young-founder': 2, 'law-society': 1 },
+  'Mechanical & Practical Problem-Solving': { 'machine-maker': 2, 'tech-builder': 1 },
+  'Verbal & Communication Strength': { 'wordsmith-media': 2, 'young-founder': 1, 'law-society': 1 },
+  'Empathy & Care': { 'bio-health': 2, 'law-society': 1 }
+};
+
+/* Question bank: 3 questions per interest. The five original quiz questions are
+   reused as-is (mapped to the interest they fit); the rest are new. Each run draws
+   5 questions from the interests the student picked. */
+const QUIZ_LEN = 5;
+const S_LOGIC = 'Logical & Algorithmic Thinking';
+const S_SCI = 'Scientific Observation & Curiosity';
+const S_CRIT = 'Critical Reasoning & World Awareness';
+const S_VIS = 'Visual & User-Centered Creativity';
+const S_STRAT = 'Strategic & Persuasive Thinking';
+const S_MECH = 'Mechanical & Practical Problem-Solving';
+const S_VERB = 'Verbal & Communication Strength';
+const S_EMP = 'Empathy & Care';
+
+let _qid = 0;
+function Q(interest, category, question, answer, wrongs, strength) {
+  _qid += 1;
+  return { id: 'b' + _qid, interest: interest, category: category, question: question, options: [answer].concat(wrongs), answer: answer, tests_strength: strength };
+}
+function fromDataset(i, interest) {
+  return Object.assign({}, DATA.gk_quiz[i], { interest: interest });
+}
+
+const QUESTION_BANK = {
+  'Coding & Tech': [
+    Q('Coding & Tech', 'Coding Basics', 'A program must print the numbers 1 to 100. Which idea lets it repeat one step 100 times?', 'A loop', ['A comment', 'A typo', 'A password'], S_LOGIC),
+    Q('Coding & Tech', 'Debugging', 'An app crashes only when a user leaves the name box blank. What is the smartest first move?', 'Reproduce the crash with a blank name and find where it breaks', ['Delete the whole app and start again', 'Ignore it because most people type a name', 'Make the text bigger'], S_LOGIC),
+    Q('Coding & Tech', 'Tech GK', 'Computers store information using only 0s and 1s. What is this number system called?', 'Binary', ['Decimal', 'Roman numerals', 'Alphabetic'], S_LOGIC)
+  ],
+  'Gaming': [
+    Q('Gaming', 'Game Design', 'In many games a power has a "cooldown" before you can use it again. Why do designers add cooldowns?', 'To keep the game balanced so one power cannot win everything', ['To make the game download faster', 'Because the graphics card needs a rest', 'To hide bugs'], S_LOGIC),
+    Q('Gaming', 'Game Maths', 'A game has 3 levels. Level 1 has 4 enemies and each level has twice as many enemies as the one before. How many enemies are in level 3?', '16', ['12', '8', '14'], S_LOGIC),
+    Q('Gaming', 'How Games Work', 'Only one player in a multiplayer game feels lag while everyone else is fine. What is the most likely cause?', 'Their internet connection is slow or unstable', ['The game has too many levels', 'Their screen is too big', 'Their controller is the wrong colour'], S_LOGIC)
+  ],
+  'Puzzles & Logic': [
+    fromDataset(0, 'Puzzles & Logic'),
+    Q('Puzzles & Logic', 'Patterns', 'What comes next in the pattern? 2, 4, 8, 16, __', '32', ['24', '30', '18'], S_LOGIC),
+    Q('Puzzles & Logic', 'Reasoning', 'All robots need power. This machine is a robot. What must be true?', 'This machine needs power', ['This machine is made of metal', 'Every machine needs power', 'Robots are always useful'], S_LOGIC)
+  ],
+  'Art & Design': [
+    fromDataset(3, 'Art & Design'),
+    Q('Art & Design', 'Colour and Contrast', 'A poster uses light grey text on a white background for an important notice. What is the problem?', 'Low contrast makes it hard to read', ['Grey is not a real colour', 'White backgrounds are not allowed', 'Posters must always have three colours'], S_VIS),
+    Q('Art & Design', 'Colour and Contrast', 'Which pair is usually best for text that must be easy to read?', 'Black text on a white background', ['Yellow text on a white background', 'Light blue text on a white background', 'Red text on a green background'], S_VIS)
+  ],
+  'Videos & Animation': [
+    Q('Videos & Animation', 'Animation Basics', 'What does a higher number of frames per second usually do to a video?', 'Makes the motion look smoother', ['Makes it quieter', 'Makes the colours darker', 'Makes it shorter'], S_VIS),
+    Q('Videos & Animation', 'Filmmaking', 'In a film, what is a close-up shot mostly used for?', 'Showing a face or detail so you feel the emotion', ['Showing the whole city at once', 'Making the movie shorter', 'Hiding the actors'], S_VIS),
+    Q('Videos & Animation', 'Storytelling', 'Your 1-minute video story feels confusing. What helps most?', 'Plan the story with a simple storyboard before filming', ['Film for five hours and hope it works', 'Add random effects everywhere', 'Use louder music instead of a plan'], S_VERB)
+  ],
+  'Animals & Nature': [
+    Q('Animals & Nature', 'Animal Facts', 'Which of these animals is a mammal?', 'Dolphin', ['Shark', 'Turtle', 'Frog'], S_SCI),
+    Q('Animals & Nature', 'Food Chains', 'In a forest, insects are eaten by birds and birds are eaten by hawks. If the hawks disappear, what will most likely happen first?', 'The number of birds may increase', ['The insects will vanish at once', 'The trees will stop growing immediately', 'Nothing can change in a food chain'], S_SCI),
+    Q('Animals & Nature', 'Nature GK', 'Why are bees important for many crops?', 'They carry pollen from flower to flower so plants can make fruit and seeds', ['They water the plants', 'They dig up the soil', 'They keep the sun away'], S_SCI)
+  ],
+  'Science & Experiments': [
+    Q('Science & Experiments', 'Fair Tests', 'You want to test whether plants grow faster with more light. What should you keep the same?', 'The water, soil and type of plant', ['The amount of light', 'Nothing, change everything', 'Only the colour of the pot'], S_SCI),
+    Q('Science & Experiments', 'Science GK', 'At sea level, water boils at about what temperature?', '100°C', ['0°C', '50°C', '150°C'], S_SCI),
+    Q('Science & Experiments', 'Science GK', 'Which gas do plants take in from the air to make their food?', 'Carbon dioxide', ['Oxygen', 'Helium', 'Hydrogen'], S_SCI)
+  ],
+  'Space & Astronomy': [
+    fromDataset(1, 'Space & Astronomy'),
+    Q('Space & Astronomy', 'Moon Science', 'Why do we see different phases of the Moon?', 'We see different amounts of its sunlit half as it orbits Earth', ['Earth casts a different shadow on it each night', 'The Moon changes its size', 'Clouds cover parts of it'], S_SCI),
+    Q('Space & Astronomy', 'Space GK', 'Which space agency ran the Chandrayaan-3 mission that landed near the Moon south pole in 2023?', 'ISRO', ['NASA', 'ESA', 'JAXA'], S_SCI)
+  ],
+  'Building & Gadgets': [
+    Q('Building & Gadgets', 'Simple Machines', 'Which simple machine is a seesaw?', 'A lever', ['A pulley', 'A wedge', 'A screw'], S_MECH),
+    Q('Building & Gadgets', 'Fixing Things', 'Your bicycle chain keeps slipping. What should you check first?', 'Whether the chain is loose or worn and the gears are clean', ['Whether the seat is comfortable', 'The colour of the frame', 'Whether the tyres are the same brand'], S_MECH),
+    Q('Building & Gadgets', 'Strong Structures', 'A paper bridge is too weak. Which change makes it stronger without adding much weight?', 'Fold the paper into ridges or tubes', ['Keep it flat and thin', 'Use less paper', 'Colour it darker'], S_MECH)
+  ],
+  'Writing & Reading': [
+    Q('Writing & Reading', 'Story Skills', 'A good story needs a problem for the hero to face. What is this called?', 'The conflict', ['The index', 'The title page', 'The footnote'], S_VERB),
+    Q('Writing & Reading', 'Clear Writing', 'Your paragraph feels messy. What helps most?', 'Keep one main idea and cut sentences that do not support it', ['Add more unrelated facts', 'Remove all punctuation', 'Make every sentence longer'], S_VERB),
+    Q('Writing & Reading', 'Reading the News', 'A news report and an opinion piece cover the same school rule. What is the main difference?', 'The report sticks to facts while the opinion piece shares what the writer thinks', ['The opinion piece is always shorter', 'The report never mentions the rule', 'There is no difference'], S_VERB)
+  ],
+  'Debating & Speaking': [
+    Q('Debating & Speaking', 'Spotting Weak Arguments', 'A friend says, "Everyone knows this phone is the best, so it must be true." What is wrong with this argument?', 'It treats popularity as proof instead of real evidence', ['It is too polite', 'It is too short', 'Nothing, popularity is the strongest proof'], S_CRIT),
+    Q('Debating & Speaking', 'Public Speaking', 'You have one minute to speak to your class. Which opening grabs attention best?', 'A surprising question or a short story about your topic', ['Reading your notes in a very quiet voice', 'Saying sorry that you are not ready', 'A long list of definitions'], S_VERB),
+    Q('Debating & Speaking', 'Debate Skills', 'In a debate, what is a rebuttal?', 'A reply that challenges what the other team said', ['The opening greeting', 'A rule about speaking time', 'The final score'], S_STRAT)
+  ],
+  'Business & Money': [
+    fromDataset(4, 'Business & Money'),
+    Q('Business & Money', 'Profit', 'A shop buys a toy for ₹80 and sells it for ₹100. What is the profit as a percentage of the buying price?', '25%', ['20%', '80%', '15%'], S_STRAT),
+    Q('Business & Money', 'Starting Small', 'What is the best first step before starting a lemonade stall?', 'Find out what nearby people would pay and what it costs you to make', ['Spend all your money on a huge sign', 'Pick any price without checking costs', 'Open on a day when nobody is around'], S_STRAT)
+  ],
+  'Leading Teams': [
+    Q('Leading Teams', 'Team Conflict', 'Two members of your group keep arguing about who leads. What should a good leader do first?', 'Listen to both sides and agree on clear roles', ['Take over and ignore everyone', 'Let the argument continue', 'Quit the project'], S_STRAT),
+    Q('Leading Teams', 'Planning', 'A team has four days to finish a task with eight steps. What is the best plan?', 'Split the steps among members and hold a daily check-in', ['Do everything on the last day', 'Let one person do all the steps', 'Skip the hardest steps'], S_STRAT),
+    Q('Leading Teams', 'Goals', 'What makes a team goal easier to reach?', 'A clear goal with a deadline that everyone understands', ['A goal only the leader knows', 'A goal that changes every hour', 'No goal, just work hard'], S_STRAT)
+  ],
+  'Helping People': [
+    Q('Helping People', 'Kindness in Action', 'A classmate looks upset and is sitting alone. What is the most helpful first step?', 'Go over, listen kindly and ask if they want to talk', ['Tell everyone what you noticed', 'Ignore it so you do not embarrass them', 'Tell them to stop being sad'], S_EMP),
+    Q('Helping People', 'Supporting Others', 'A friend feels stressed before exams. What helps most?', 'Help them plan short study blocks with breaks', ['Tell them to study all night', 'Say exams do not matter', 'Compare them with the top student'], S_EMP),
+    Q('Helping People', 'First Aid Basics', 'You find someone who has fainted but is breathing. What is the sensible first action?', 'Call for help (112) and keep them safe until it arrives', ['Give them water to drink right away', 'Shake them hard to wake them', 'Walk away and hope they recover'], S_EMP)
+  ],
+  'History & World': [
+    fromDataset(2, 'History & World'),
+    Q('History & World', 'Indian History', 'In which year did India become independent from British rule?', '1947', ['1935', '1950', '1942'], S_CRIT),
+    Q('History & World', 'Ancient Cities', 'Harappa and Mohenjo-daro were part of an early civilisation in which river valley?', 'The Indus Valley', ['The Amazon Valley', 'The Rhine Valley', 'The Mississippi Valley'], S_CRIT)
+  ]
+};
+
+function shuffle(a, rng) {
+  const c = a.slice();
+  for (let i = c.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const t = c[i]; c[i] = c[j]; c[j] = t;
+  }
+  return c;
+}
+
+/* Draw QUIZ_LEN questions round-robin from the picked interests (order shuffled),
+   so 2 interests give 3+2 questions, 3 give 2+2+1, 4 give 2+1+1+1. */
+function buildQuiz(selected, rng) {
+  rng = rng || Math.random;
+  const order = shuffle(selected, rng);
+  const queues = {};
+  order.forEach(function (it) { queues[it] = shuffle(QUESTION_BANK[it] || [], rng); });
+  const out = [];
+  let k = 0, guard = 0;
+  while (out.length < QUIZ_LEN && guard < 60 && order.length) {
+    const it = order[k % order.length];
+    k += 1; guard += 1;
+    const next = queues[it].shift();
+    if (next) out.push(next);
+  }
+  return out.map(function (q) { return Object.assign({}, q, { options: shuffle(q.options, rng) }); });
+}
+
+function joinList(a) {
+  if (a.length <= 1) return a.join('');
+  return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+}
+
+/* points = 3 per matched interest + 1.5 per linked strength weight from correct answers */
+function computeResults(selected, answers) {
+  const right = answers.filter(function (a) { return a.correct; });
+  const strengths = right.map(function (a) { return a.strength; });
+  const ranked = DATA.directions.map(function (d, idx) {
+    const matched = d.interests.filter(function (i) { return selected.indexOf(i) !== -1; });
+    const boost = strengths.reduce(function (s, st) { return s + ((STRENGTH_LINKS[st] || {})[d.id] || 0); }, 0);
+    return { d: d, idx: idx, matched: matched, boost: boost, points: matched.length * 3 + boost * 1.5 };
+  }).sort(function (a, b) {
+    return b.points - a.points || b.matched.length - a.matched.length || a.idx - b.idx;
+  });
+  const top3 = ranked.slice(0, 3);
+  let badge = null;
+  if (strengths.length) {
+    const topId = top3[0].d.id;
+    badge = strengths.slice().sort(function (a, b) {
+      return ((STRENGTH_LINKS[b] || {})[topId] || 0) - ((STRENGTH_LINKS[a] || {})[topId] || 0);
+    })[0];
+  }
+  const tested = [];
+  answers.forEach(function (a) {
+    let t = tested.filter(function (x) { return x.strength === a.strength; })[0];
+    if (!t) { t = { strength: a.strength, lit: false }; tested.push(t); }
+    if (a.correct) t.lit = true;
+  });
+  const detail = answers.map(function (a) { return (a.interest || 'General') + ': ' + (a.correct ? 'right' : 'wrong'); });
+  return { score: right.length, total: answers.length, strengths: strengths, tested: tested, detail: detail, top3: top3, badge: badge };
+}
+
+function localReply(q, selected, results) {
+  const t1 = results.top3[0].d, t2 = results.top3[1].d, s = q.toLowerCase().trim();
+  if (/^(hi|hii|hello|hey|yo|good (morning|afternoon|evening))\b/.test(s)) {
+    return 'Hey! Good to see you. You can ask me about your results, Class 9 subjects, study tips, or anything on your mind.';
+  }
+  if (/\b(thanks|thank you|thx)\b/.test(s)) {
+    return 'You are welcome! Want to explore anything else?';
+  }
+  if (/who are you|what are you|your name/.test(s)) {
+    return 'I am your Direction Mentor. I help you explore what you enjoy and where it can lead.';
+  }
+  if (/\b(weekend|project|fun|try)\b/.test(s)) {
+    return 'Here is a fun one for you: ' + t1.weekend_quest + '\n\nWant a second option? ' + t2.weekend_quest;
+  }
+  if (/\b(two|both|different|mix|combine)\b/.test(s)) {
+    return 'That is totally normal. Your top two matches are ' + t1.name + ' and ' + t2.name + '.\n\nTry both weekend quests:\n- ' + t1.weekend_quest + '\n- ' + t2.weekend_quest + '\n\nThen notice which one you keep wanting to work on after it ends.';
+  }
+  if (/\b(class|subject|subjects|stream|streams|pick|choose|select)\b/.test(s)) {
+    return 'Your top match is ' + t1.name + ', which points to ' + joinList(t1.future_streams) + ' in Class 9 to 11. Your next match, ' + t2.name + ', points to ' + joinList(t2.future_streams) + '.\n\nYou do not need to decide today. Ask your teachers what is inside those streams and see which subjects feel exciting.';
+  }
+  if (/\b(study|studying|exam|exams|homework|marks|revise|revision|focus|concentrate)\b/.test(s)) {
+    return 'A few things that work for many students: study in 25-minute blocks with 5-minute breaks, test yourself instead of only rereading, and sleep well before exams. Want help planning a week?';
+  }
+  if (/\b(stress|stressed|worried|nervous|scared|anxious|sad|lonely)\b/.test(s)) {
+    return 'That is a normal feeling, and it is okay to be unsure at your age. Talking to a parent, teacher or someone you trust can really help. Do you want to tell me what is on your mind?';
+  }
+  if (/\b(career|careers|job|jobs|become)\b/.test(s)) {
+    return 'Cool careers linked to ' + t1.name + ' include ' + joinList(t1.cool_careers) + '. For ' + t2.name + ' you could look at ' + joinList(t2.cool_careers) + '.';
+  }
+  return 'I can chat more freely when Claude access is on. For now, I can talk about your results. Your top match is ' + t1.name + '. ' + t1.tagline + ' Try asking about Class 9 subjects, careers, a weekend project, or study tips.';
+}
+
+function buildPrompt(selected, results, history) {
+  const dataset = DATA.directions.map(function (d) {
+    return '- ' + d.name + ' | ' + d.tagline + ' | strength: ' + d.strength_tag + ' | streams: ' + d.future_streams.join('; ') + ' | careers: ' + d.cool_careers.join('; ') + ' | weekend quest: ' + d.weekend_quest;
+  }).join('\n');
+  const top = results.top3.map(function (r, i) {
+    return (i + 1) + '. ' + r.d.name + ' (matched interests: ' + (r.matched.length ? r.matched.join(', ') : 'none') + ')';
+  }).join('\n');
+  const prior = history.slice(0, -1).slice(-12).map(function (m) {
+    return (m.role === 'user' ? 'Student: ' : 'Mentor: ') + m.text;
+  }).join('\n');
+  const question = history[history.length - 1].text;
+  return [
+    'You are "Direction Mentor", a warm, curious AI buddy for a Grade 8 student in India (about 13 years old). Chat the way a friendly everyday AI assistant does.',
+    '',
+    'STYLE: Natural conversation in simple words. Encouraging, never talking down. Match your length to the message: a casual line gets 1 to 3 sentences, while a how-to or explanation can run up to about 200 words. Short paragraphs, or a short dash list when it helps. No emojis and no markdown headings. Ask a friendly follow-up question when it keeps the chat going.',
+    'SCOPE: You can talk about anything suitable for a 13-year-old: school subjects and homework help, study and exam tips, hobbies, books, games, tech, science, careers, friends, feelings about school, or just casual talk. Use the student results below as background when it helps, for example when they ask what to study, what to try, or what they are good at. Do not force every answer back to the results.',
+    'SAFETY: Keep everything age-appropriate. For serious worries, health, legal or money matters, give only basic safe advice and suggest talking to a parent, teacher or another trusted adult. If the student seems upset or unsafe, respond kindly and encourage them to reach out to a trusted adult. Never promise exam, career or admission outcomes. Say so honestly when you are not sure.',
+    '',
+    'STUDENT RESULTS (background)',
+    'Interests picked: ' + selected.join(', '),
+    'Quiz score: ' + results.score + '/' + results.total,
+    'Quiz by topic: ' + results.detail.join('; '),
+    'Strengths shown by correct answers: ' + (results.strengths.length ? results.strengths.join(', ') : 'none yet'),
+    'Top 3 matched directions:',
+    top,
+    '',
+    'DIRECTIONS IN THE APP (reference you can use and build on)',
+    dataset,
+    '',
+    prior ? 'CONVERSATION SO FAR\n' + prior + '\n' : '',
+    'Student: ' + question,
+    'Mentor:'
+  ].join('\n');
+}
+</script>
+
+<script id="ui">
+const { useState, useEffect, useRef, useMemo } = React;
+const html = htm.bind(React.createElement);
+
+const INTERESTS = [
+  { name: 'Coding & Tech', icon: 'Code', hue: 'var(--blue)' },
+  { name: 'Art & Design', icon: 'Palette', hue: 'var(--rose)' },
+  { name: 'Animals & Nature', icon: 'PawPrint', hue: 'var(--emerald)' },
+  { name: 'Debating & Speaking', icon: 'Mic', hue: 'var(--amber)' },
+  { name: 'Gaming', icon: 'Gamepad2', hue: 'var(--indigo)' },
+  { name: 'Business & Money', icon: 'Coins', hue: 'var(--amber)' },
+  { name: 'Science & Experiments', icon: 'FlaskConical', hue: 'var(--cyan)' },
+  { name: 'Building & Gadgets', icon: 'Wrench', hue: 'var(--blue)' },
+  { name: 'Writing & Reading', icon: 'BookOpen', hue: 'var(--rose)' },
+  { name: 'Space & Astronomy', icon: 'Rocket', hue: 'var(--indigo)' },
+  { name: 'Puzzles & Logic', icon: 'Puzzle', hue: 'var(--emerald)' },
+  { name: 'Videos & Animation', icon: 'Clapperboard', hue: 'var(--cyan)' },
+  { name: 'Helping People', icon: 'HeartHandshake', hue: 'var(--rose)' },
+  { name: 'Leading Teams', icon: 'Users', hue: 'var(--amber)' },
+  { name: 'History & World', icon: 'Globe', hue: 'var(--blue)' }
+];
+const SCREEN_NAMES = ['Welcome', 'Interest Picker', 'Mini Quiz', 'Your Results', 'AI Mentor'];
+const QUICK = ['Which subjects should I pick in Class 9?', 'Give me a fun weekend project', 'What if I like two different things?'];
+
+function Icon({ name, size = 20, sw = 2, className = '' }) {
+  const L = window.lucide;
+  const node = L && L.icons && L.icons[name];
+  if (!node) return html`<span className=${className} style=${{ display: 'inline-block', width: size, height: size }} aria-hidden="true"></span>`;
+  const kids = (node[0] === 'svg' && Array.isArray(node[2])) ? node[2] : node;
+  return React.createElement('svg', {
+    xmlns: 'http://www.w3.org/2000/svg', width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: sw, strokeLinecap: 'round', strokeLinejoin: 'round', className: className, 'aria-hidden': 'true'
+  }, kids.map(function (k, i) { return React.createElement(k[0], Object.assign({}, k[1], { key: i })); }));
+}
+
+function useFit() {
+  const [s, setS] = useState(1);
+  useEffect(() => {
+    const f = () => {
+      const w = (document.documentElement.clientWidth - 32) / 390;
+      const h = (window.innerHeight - 76) / 844;
+      setS(Math.max(0.3, Math.min(1, w, Math.max(0.62, h))));
+    };
+    f();
+    window.addEventListener('resize', f);
+    return () => window.removeEventListener('resize', f);
+  }, []);
+  return s;
+}
+
+function StatusBar() {
+  const fmt = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: false });
+  const [t, setT] = useState(fmt());
+  useEffect(() => { const id = setInterval(() => setT(fmt()), 20000); return () => clearInterval(id); }, []);
+  return html`<div className="status">
+    <span>${t}</span>
+    <div className="island"><i></i></div>
+    <div className="icons">
+      <${Icon} name="Signal" size=${16} />
+      <${Icon} name="Wifi" size=${16} />
+      <${Icon} name="BatteryFull" size=${20} />
+    </div>
+  </div>`;
+}
+
+function Header({ title, sub, onBack, right }) {
+  return html`<div className="flex items-center gap-3 px-5 pt-2 pb-3">
+    ${onBack ? html`<button className="icon-btn" onClick=${onBack} aria-label="Go back"><${Icon} name="ArrowLeft" size=${18} /></button>` : null}
+    <div className="min-w-0 flex-1">
+      <div className="font-display" style=${{ fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em', lineHeight: 1.15 }}>${title}</div>
+      ${sub ? html`<div style=${{ color: 'var(--text-2)', fontSize: 12, marginTop: 2 }}>${sub}</div>` : null}
+    </div>
+    ${right || null}
+  </div>`;
+}
+
+/* ---------- Screen 1 ---------- */
+function Welcome({ onStart }) {
+  return html`<div className="app enter">
+    <div className="scroll" style=${{ padding: '4px 24px 8px', textAlign: 'center' }}>
+      <div className="eyebrow" style=${{ marginTop: 8 }}>Grade 8 student guide</div>
+      <div style=${{ position: 'relative', width: 256, height: 250, margin: '14px auto 6px' }}>
+        <svg width="256" height="250" viewBox="0 0 256 250" style=${{ position: 'absolute', inset: 0 }} aria-hidden="true">
+          <circle cx="128" cy="125" r="108" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1.5" strokeDasharray="3 7" />
+          <circle cx="128" cy="125" r="74" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1.5" />
+        </svg>
+        <div className="glass" style=${{ position: 'absolute', left: 76, top: 73, width: 104, height: 104, borderRadius: '50%', display: 'grid', placeItems: 'center', color: 'var(--blue)', boxShadow: '0 0 60px -6px rgba(91,140,255,0.6), inset 0 1px 1px rgba(255,255,255,0.18)' }}>
+          <${Icon} name="Compass" size=${46} sw=${1.75} />
+        </div>
+        <div className="orb glass float" style=${{ top: 4, left: 16, color: 'var(--blue)' }}><${Icon} name="Code" size=${24} /></div>
+        <div className="orb glass float" style=${{ top: 28, right: 0, color: 'var(--rose)', animationDelay: '-1.2s' }}><${Icon} name="Palette" size=${24} /></div>
+        <div className="orb glass float" style=${{ bottom: 30, left: 0, color: 'var(--cyan)', animationDelay: '-2.4s' }}><${Icon} name="FlaskConical" size=${24} /></div>
+        <div className="orb glass float" style=${{ bottom: 6, right: 22, color: 'var(--amber)', animationDelay: '-3.4s' }}><${Icon} name="Mic" size=${24} /></div>
+      </div>
+      <h1 className="font-display t-silver" style=${{ fontWeight: 700, fontSize: 42, lineHeight: 1.02, letterSpacing: '-0.035em' }}>Find Your<br />Direction</h1>
+      <p style=${{ color: 'var(--text-2)', fontSize: 15, lineHeight: 1.5, margin: '12px auto 0', maxWidth: 300 }}>Tell us what you love, take a 5-question quiz built around your picks, and see which Class 9 to 11 paths fit you.</p>
+      <div className="glass" style=${{ display: 'flex', justifyContent: 'space-around', gap: 8, margin: '18px 0 4px', padding: '12px 8px', borderRadius: 18 }}>
+        ${[[INTERESTS.length, 'interests'], [QUIZ_LEN, 'questions'], [DATA.directions.length, 'directions']].map(function (x) {
+          return html`<div key=${x[1]}><div className="font-display" style=${{ fontWeight: 700, fontSize: 20 }}>${x[0]}</div><div className="eyebrow" style=${{ marginTop: 3 }}>${x[1]}</div></div>`;
+        })}
+      </div>
+    </div>
+    <div className="foot">
+      <button className="btn-light" onClick=${onStart}>Start My Discovery <${Icon} name="ArrowRight" size=${20} /></button>
+      <div style=${{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, color: 'var(--text-3)', fontSize: 12, marginTop: 10 }}><${Icon} name="Clock" size=${13} /> About 2 minutes</div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Screen 2 ---------- */
+function Interests({ selected, onToggle, onBack, onNext }) {
+  const n = selected.length, full = n >= 4, ok = n >= 2 && n <= 4;
+  return html`<div className="app enter">
+    <${Header} title="What do you love?" sub="Pick 2 to 4. There are no wrong answers." onBack=${onBack}
+      right=${html`<div className="glass font-display" style=${{ borderRadius: 999, padding: '7px 12px', fontWeight: 700, fontSize: 13, color: ok ? 'var(--emerald)' : 'var(--text-2)' }}>${n} of 4</div>`} />
+    <div className="scroll" style=${{ padding: '4px 20px 12px' }}>
+      <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        ${INTERESTS.map(function (it, i) {
+          const on = selected.indexOf(it.name) !== -1;
+          const wide = INTERESTS.length % 2 === 1 && i === INTERESTS.length - 1;
+          return html`<button key=${it.name} className=${'pill' + (wide ? ' wide' : '')} style=${{ '--h': it.hue }} aria-pressed=${on} disabled=${full && !on} onClick=${function () { onToggle(it.name); }}>
+            <span className="ico"><${Icon} name=${it.icon} size=${18} /></span>
+            <span className="min-w-0" style=${{ flex: 1 }}>${it.name}</span>
+            ${on ? html`<${Icon} name="Check" size=${16} sw=${3} />` : null}
+          </button>`;
+        })}
+      </div>
+    </div>
+    <div className="foot">
+      <button className="btn-light" disabled=${!ok} onClick=${onNext}>Next: Mini Quiz <${Icon} name="ArrowRight" size=${20} /></button>
+      <div style=${{ textAlign: 'center', color: 'var(--text-3)', fontSize: 12, marginTop: 10, minHeight: 15 }}>${n < 2 ? 'Pick at least ' + (2 - n) + ' more' : full ? 'That is the maximum. Tap one to swap it.' : 'Looking good. You can add up to ' + (4 - n) + ' more.'}</div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Screen 3 ---------- */
+function Quiz({ quiz, score, onAnswer, onBack, onFinish }) {
+  const [i, setI] = useState(0);
+  const [picked, setPicked] = useState(null);
+  const q = quiz[i];
+  const done = picked !== null;
+  const right = done && picked === q.answer;
+  const pick = (opt) => {
+    if (done) return;
+    setPicked(opt);
+    onAnswer({ id: q.id, picked: opt, correct: opt === q.answer, strength: q.tests_strength, interest: q.interest });
+  };
+  const next = () => { if (i < quiz.length - 1) { setI(i + 1); setPicked(null); } else onFinish(); };
+  return html`<div className="app enter" key=${i}>
+    <${Header} title="Mini Quiz" sub=${q.interest + ' · ' + q.category} onBack=${i === 0 ? onBack : null}
+      right=${html`<div className="glass font-display" style=${{ borderRadius: 999, padding: '7px 12px', fontWeight: 700, fontSize: 13 }}>Score ${score}</div>`} />
+    <div style=${{ padding: '0 20px 12px' }}>
+      <div style=${{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 7 }}><span>Question</span><span>${i + 1}/${quiz.length}</span></div>
+      <div className="bar" role="progressbar" aria-valuemin="0" aria-valuemax=${quiz.length} aria-valuenow=${i + 1}><i style=${{ width: ((i + 1) / quiz.length * 100) + '%' }}></i></div>
+    </div>
+    <div className="scroll" style=${{ padding: '4px 20px 12px' }}>
+      <div className="glass" style=${{ borderRadius: 22, padding: 18, marginBottom: 14 }}>
+        <div className="eyebrow" style=${{ marginBottom: 10 }}>Tests: ${q.tests_strength}</div>
+        <div className="font-display" style=${{ fontWeight: 600, fontSize: 18, lineHeight: 1.3, letterSpacing: '-0.01em' }}>${q.question}</div>
+      </div>
+      <div style=${{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        ${q.options.map(function (opt, k) {
+          let s = 'idle';
+          if (done) s = opt === q.answer ? 'correct' : (opt === picked ? 'wrong' : 'dim');
+          return html`<button key=${opt} className="opt" data-s=${s} onClick=${function () { pick(opt); }} aria-disabled=${done}>
+            <span className="key">${s === 'correct' ? html`<${Icon} name="Check" size=${15} sw=${3} />` : s === 'wrong' ? html`<${Icon} name="X" size=${15} sw=${3} />` : 'ABCD'[k]}</span>
+            <span style=${{ flex: 1, minWidth: 0 }}>${opt}</span>
+          </button>`;
+        })}
+      </div>
+      ${done ? html`<div className="enter" role="status" style=${{ marginTop: 14, padding: '12px 14px', borderRadius: 16, fontSize: 13, lineHeight: 1.4, background: right ? 'rgba(52,211,153,0.14)' : 'rgba(251,113,133,0.14)', border: '1px solid ' + (right ? 'rgba(52,211,153,0.5)' : 'rgba(251,113,133,0.5)') }}>
+        <b>${right ? 'Correct.' : 'Not this time.'}</b> ${right ? 'Strength unlocked: ' + q.tests_strength + '.' : 'The answer is ' + q.answer + '.'}
+      </div>` : null}
+    </div>
+    <div className="foot">
+      <button className="btn-light" disabled=${!done} onClick=${next}>${i < quiz.length - 1 ? 'Next Question' : 'See My Results'} <${Icon} name="ArrowRight" size=${20} /></button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Screen 4 ---------- */
+function DirectionCard({ r, rank }) {
+  const d = r.d, first = rank === 1;
+  const tag = r.matched.length ? r.matched.length + ' of ' + d.interests.length + ' interests match' : (r.boost ? 'Matches your quiz strengths' : 'Worth exploring');
+  return html`<article className=${'glass dcard' + (first ? ' dcard-top' : '')}>
+    <div className="flex items-start gap-3">
+      <div className="rank">${rank}</div>
+      <div className="min-w-0">
+        <div className="eyebrow" style=${{ color: first ? 'var(--amber)' : 'var(--text-3)' }}>${first ? 'Best match' : 'Also a fit'} · ${tag}</div>
+        <h3 className="font-display" style=${{ fontWeight: 700, fontSize: 19, lineHeight: 1.18, letterSpacing: '-0.02em', marginTop: 5 }}>${d.name}</h3>
+      </div>
+    </div>
+    <p style=${{ color: 'var(--text-2)', fontSize: 13.5, lineHeight: 1.5 }}>${d.tagline}</p>
+    <div className="chips">
+      ${d.interests.map(function (it) {
+        const on = r.matched.indexOf(it) !== -1;
+        return html`<span key=${it} className=${'chip' + (on ? ' on' : '')}>${on ? html`<${Icon} name="Check" size=${11} sw=${3} />` : null}${it}</span>`;
+      })}
+    </div>
+    <div>
+      <div className="label">Class 9 to 11 streams</div>
+      <div className="chips">${d.future_streams.map(function (s) { return html`<span key=${s} className="chip"><${Icon} name="GraduationCap" size=${12} />${s}</span>`; })}</div>
+    </div>
+    <div>
+      <div className="label">Cool careers</div>
+      <div className="chips">${d.cool_careers.map(function (c) { return html`<span key=${c} className="chip"><${Icon} name="Briefcase" size=${12} />${c}</span>`; })}</div>
+    </div>
+    <div className="quest">
+      <div className="qi"><${Icon} name="Flag" size=${16} /></div>
+      <div className="min-w-0">
+        <div className="eyebrow" style=${{ color: 'var(--amber)' }}>Try this weekend</div>
+        <div style=${{ fontSize: 13.5, lineHeight: 1.45, marginTop: 4 }}>${d.weekend_quest}</div>
+      </div>
+    </div>
+  </article>`;
+}
+
+function Results({ results, answers, onRetake, onAsk }) {
+  const C = 2 * Math.PI * 34;
+  return html`<div className="app enter">
+    <${Header} title="Your Direction" sub="Based on what you love and how you thought"
+      right=${html`<button className="icon-btn" onClick=${onRetake} aria-label="Retake"><${Icon} name="RotateCcw" size=${18} /></button>`} />
+    <div className="scroll" style=${{ padding: '4px 20px 12px' }}>
+      <div className="glass" style=${{ borderRadius: 24, padding: 16, marginBottom: 18 }}>
+        <div className="flex items-center gap-4">
+          <div style=${{ position: 'relative', width: 84, height: 84, flex: 'none' }}>
+            <svg width="84" height="84" viewBox="0 0 84 84" style=${{ transform: 'rotate(-90deg)' }} aria-hidden="true">
+              <circle className="ring-bg" cx="42" cy="42" r="34" fill="none" strokeWidth="7" />
+              <circle className="ring-fg" cx="42" cy="42" r="34" fill="none" strokeWidth="7" strokeDasharray=${C} strokeDashoffset=${C * (1 - results.score / results.total)} />
+            </svg>
+            <div style=${{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+              <div><div className="font-display" style=${{ fontWeight: 700, fontSize: 22, lineHeight: 1 }}>${results.score}/${results.total}</div><div className="eyebrow" style=${{ marginTop: 3, fontSize: 8 }}>score</div></div>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <div className="eyebrow" style=${{ color: 'var(--amber)', display: 'flex', alignItems: 'center', gap: 5 }}><${Icon} name="Trophy" size=${12} /> Top strength</div>
+            <div className="font-display t-silver" style=${{ fontWeight: 700, fontSize: 21, lineHeight: 1.15, letterSpacing: '-0.02em', marginTop: 6 }}>${results.badge || 'Curious Explorer'}</div>
+            ${results.badge ? null : html`<div style=${{ color: 'var(--text-2)', fontSize: 12, marginTop: 4 }}>Your interests are leading the match.</div>`}
+          </div>
+        </div>
+        <div className="label" style=${{ marginTop: 16 }}>Strengths from your quiz</div>
+        <div className="chips">
+          ${results.tested.map(function (t) {
+            return html`<span key=${t.strength} className=${'chip ' + (t.lit ? 'lit' : 'off')}>${t.lit ? html`<${Icon} name="Check" size=${11} sw=${3} />` : html`<${Icon} name="Lock" size=${11} />`}${t.strength}</span>`;
+          })}
+        </div>
+      </div>
+      <div className="eyebrow" style=${{ margin: '0 2px 10px' }}>Your top 3 directions</div>
+      <div style=${{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        ${results.top3.map(function (r, i) { return html`<${DirectionCard} key=${r.d.id} r=${r} rank=${i + 1} />`; })}
+      </div>
+    </div>
+    <div className="foot">
+      <button className="btn-light" onClick=${onAsk}><${Icon} name="Sparkles" size=${19} /> Ask AI Mentor About My Results</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Screen 5 ---------- */
+function Chat({ messages, busy, live, onBack, onSend }) {
+  const [text, setText] = useState('');
+  const endRef = useRef(null);
+  useEffect(() => { if (endRef.current) endRef.current.scrollIntoView({ block: 'end' }); }, [messages]);
+  const submit = (e) => { e.preventDefault(); if (!text.trim() || busy) return; onSend(text); setText(''); };
+  const sub = live === true ? 'Powered by Claude' : live === false ? 'Offline mentor, built-in answers' : 'Ask me about your results';
+  return html`<div className="app enter">
+    <${Header} title="Direction Mentor" sub=${sub} onBack=${onBack}
+      right=${html`<div className="glass" style=${{ width: 40, height: 40, borderRadius: 14, display: 'grid', placeItems: 'center', color: 'var(--blue)' }}><${Icon} name="Bot" size=${20} /></div>`} />
+    <div className="scroll" style=${{ padding: '4px 20px 8px' }} aria-live="polite">
+      <div style=${{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        ${live === false ? html`<div className="glass" style=${{ borderRadius: 14, padding: '10px 12px', fontSize: 12, lineHeight: 1.45, color: 'var(--text-2)' }}>Claude access is off, so I am using built-in answers. Allow access when the page asks, or reload, to chat freely.</div>` : null}
+        ${messages.map(function (m, k) {
+          return html`<div key=${k} className=${'bub ' + (m.role === 'user' ? 'me' : 'ai glass')}>
+            ${m.pending && !m.text ? html`<span className="dots" aria-label="Mentor is typing"><span></span><span></span><span></span></span>` : m.text}
+          </div>`;
+        })}
+        <div ref=${endRef}></div>
+      </div>
+    </div>
+    <div style=${{ flex: 'none', paddingTop: 6 }}>
+      <div className="qchips">
+        ${QUICK.map(function (qq) { return html`<button key=${qq} className="qchip" disabled=${busy} onClick=${function () { onSend(qq); }}>${qq}</button>`; })}
+      </div>
+      <form className="foot" style=${{ display: 'flex', gap: 8, alignItems: 'center', paddingTop: 4 }} onSubmit=${submit}>
+        <input id="chat-input" className="field" value=${text} onChange=${function (e) { setText(e.target.value); }} placeholder="Ask about your results" autoComplete="off" aria-label="Message the mentor" />
+        <button type="submit" className="send" disabled=${busy || !text.trim()} aria-label="Send"><${Icon} name="Send" size=${18} /></button>
+      </form>
+    </div>
+  </div>`;
+}
+
+/* ---------- App ---------- */
+function App() {
+  const s = useFit();
+  const [screen, setScreen] = useState(1);
+  const [selected, setSelected] = useState([]);
+  const [answers, setAnswers] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState(null);
+  const [quiz, setQuiz] = useState([]);
+
+  const results = useMemo(function () {
+    return quiz.length && answers.length === quiz.length ? computeResults(selected, answers) : null;
+  }, [selected, answers, quiz]);
+
+  useEffect(() => {
+    let off = false;
+    try {
+      const c = window.claude;
+      if (c && c.use) c.use('sample').then(function (x) { if (!off && !x) setLive(false); }).catch(function () { if (!off) setLive(false); });
+      else setLive(false);
+    } catch (e) { setLive(false); }
+    return () => { off = true; };
+  }, []);
+
+  const toggle = (name) => setSelected(function (cur) {
+    if (cur.indexOf(name) !== -1) return cur.filter(function (x) { return x !== name; });
+    return cur.length >= 4 ? cur : cur.concat(name);
+  });
+  const startQuiz = () => { setAnswers([]); setQuiz(buildQuiz(selected)); setScreen(3); };
+  const retake = () => { setSelected([]); setAnswers([]); setQuiz([]); setMessages([]); setBusy(false); setScreen(2); };
+  const openChat = () => {
+    if (!messages.length && results) {
+      setMessages([{ role: 'assistant', text: 'Hey! I am your Direction Mentor. You picked ' + joinList(selected) + ', scored ' + results.score + '/' + results.total + ' on the quiz, and your top match is ' + results.top3[0].d.name + '. Ask me about your results, or just chat: Class 9 subjects, study tips, ideas to try, whatever is on your mind.' }]);
+    }
+    setScreen(5);
+  };
+
+  const ask = async (q) => {
+    const text = q.trim();
+    if (!text || busy || !results) return;
+    const history = messages.concat({ role: 'user', text: text });
+    setMessages(history.concat({ role: 'assistant', text: '', pending: true }));
+    setBusy(true);
+    const setLast = function (t, pending) {
+      setMessages(function (m) { const c = m.slice(); c[c.length - 1] = { role: 'assistant', text: t, pending: !!pending }; return c; });
+    };
+    try {
+      const sample = window.claude && window.claude.use ? await window.claude.use('sample') : null;
+      if (!sample) throw { code: 'unavailable' };
+      const res = await sample(buildPrompt(selected, results, history), {
+        cache: false,
+        onText: function (o) { if (o && o.text && o.text !== 'Thinking...') setLast(o.text, true); }
+      });
+      const out = (res && res.text ? res.text : '').trim();
+      setLive(true);
+      setLast(out || localReply(text, selected, results), false);
+    } catch (e) {
+      if (e && e.code === 'rate_limited') {
+        setLast('I am getting a lot of questions at once. Give me a few seconds and ask again.', false);
+      } else {
+        setLive(false);
+        setLast(localReply(text, selected, results), false);
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  let body = null;
+  if (screen === 1) body = html`<${Welcome} onStart=${function () { setScreen(2); }} />`;
+  else if (screen === 2) body = html`<${Interests} selected=${selected} onToggle=${toggle} onBack=${function () { setScreen(1); }} onNext=${startQuiz} />`;
+  else if (screen === 3) body = html`<${Quiz} quiz=${quiz} score=${answers.filter(function (a) { return a.correct; }).length}
+      onAnswer=${function (a) { setAnswers(function (cur) { return cur.concat(a); }); }}
+      onBack=${function () { setAnswers([]); setScreen(2); }}
+      onFinish=${function () { setScreen(4); }} />`;
+  else if (screen === 4 && results) body = html`<${Results} results=${results} answers=${answers} onRetake=${retake} onAsk=${openChat} />`;
+  else if (screen === 5 && results) body = html`<${Chat} messages=${messages} busy=${busy} live=${live} onBack=${function () { setScreen(4); }} onSend=${ask} />`;
+
+  return html`<div className="studio">
+    <div className="frame-label" style=${{ width: 390 * s }}><b>Direction Finder</b><span>/</span><span>0${screen} ${SCREEN_NAMES[screen - 1]}</span></div>
+    <div style=${{ width: 390 * s, height: 844 * s }}>
+      <div className="device" style=${{ transform: 'scale(' + s + ')', transformOrigin: 'top left' }}>
+        <div className="hw" style=${{ top: 120, height: 25 }}></div>
+        <div className="hw" style=${{ top: 162, height: 46 }}></div>
+        <div className="hw" style=${{ top: 222, height: 46 }}></div>
+        <div className="hw r" style=${{ top: 170, height: 72 }}></div>
+        <div className="screen">
+          <${StatusBar} />
+          ${body}
+          <div className="glare"></div>
+          <div className="home"></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
+</script>
+
+</body></html>
