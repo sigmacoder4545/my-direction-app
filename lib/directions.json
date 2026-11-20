@@ -1,0 +1,178 @@
+[
+  {
+    "id": "tech-builder",
+    "name": "Tech & Game Builder",
+    "tagline": "You enjoy figuring out how apps, games, and code work under the hood.",
+    "interests": [
+      "Coding & Tech",
+      "Gaming",
+      "Puzzles & Logic"
+    ],
+    "strength_tag": "Logical & Algorithmic Thinking",
+    "future_streams": [
+      "Science (PCM)",
+      "Computer Science / AI"
+    ],
+    "cool_careers": [
+      "Game Developer",
+      "AI Engineer",
+      "Cybersecurity Analyst",
+      "Robotics Engineer"
+    ],
+    "weekend_quest": "Build a simple playable game in Scratch or code a 10-line Python trivia quiz."
+  },
+  {
+    "id": "visual-creator",
+    "name": "Visual Storyteller & Designer",
+    "tagline": "You notice colors, layouts, animations, and love making things look awesome.",
+    "interests": [
+      "Art & Design",
+      "Videos & Animation",
+      "Gaming"
+    ],
+    "strength_tag": "Visual & Spatial Creativity",
+    "future_streams": [
+      "Humanities + Fine Arts",
+      "Design & Multimedia",
+      "Any Stream + Portfolio"
+    ],
+    "cool_careers": [
+      "UI/UX App Designer",
+      "3D Animator",
+      "Architect",
+      "Product Designer"
+    ],
+    "weekend_quest": "Redesign the home screen of your favorite mobile app on paper or in Canva."
+  },
+  {
+    "id": "bio-health",
+    "name": "Body, Brain & Nature Explorer",
+    "tagline": "You are curious about how humans, animals, medicine, or the brain work.",
+    "interests": [
+      "Science & Experiments",
+      "Animals & Nature",
+      "Helping People"
+    ],
+    "strength_tag": "Scientific Observation & Empathy",
+    "future_streams": [
+      "Science (PCB)",
+      "Psychology & Health Sciences"
+    ],
+    "cool_careers": [
+      "Doctor / Surgeon",
+      "Clinical Psychologist",
+      "Wildlife Biologist",
+      "Sports Scientist"
+    ],
+    "weekend_quest": "Track your sleep, water, and focus levels for 3 days like a real health scientist."
+  },
+  {
+    "id": "young-founder",
+    "name": "Young Entrepreneur & Leader",
+    "tagline": "You love leading teams, debating ideas, or spotting ways to solve everyday problems.",
+    "interests": [
+      "Business & Money",
+      "Debating & Speaking",
+      "Leading Teams"
+    ],
+    "strength_tag": "Strategic & Persuasive Thinking",
+    "future_streams": [
+      "Commerce with Math",
+      "Humanities + Economics"
+    ],
+    "cool_careers": [
+      "Startup Founder",
+      "Product Manager",
+      "Financial Strategist",
+      "Marketing Director"
+    ],
+    "weekend_quest": "Spot 3 annoying problems at school and sketch a 1-page mini business idea to fix one."
+  },
+  {
+    "id": "wordsmith-media",
+    "name": "Storyteller, Journalist & Content Creator",
+    "tagline": "You love writing stories, explaining cool facts, or making podcasts and videos.",
+    "interests": [
+      "Writing & Reading",
+      "Videos & Animation",
+      "Debating & Speaking"
+    ],
+    "strength_tag": "Verbal & Communication Strength",
+    "future_streams": [
+      "Humanities / Arts",
+      "Mass Communication & Media"
+    ],
+    "cool_careers": [
+      "Journalist",
+      "Film Director",
+      "Screenwriter",
+      "Science Communicator"
+    ],
+    "weekend_quest": "Write a 300-word review of your favorite movie or record a 2-minute explainer video."
+  },
+  {
+    "id": "machine-maker",
+    "name": "Hands-On Engineer & Inventor",
+    "tagline": "You like taking gadgets apart, building models, and seeing real-world physics in action.",
+    "interests": [
+      "Building & Gadgets",
+      "Science & Experiments",
+      "Puzzles & Logic"
+    ],
+    "strength_tag": "Mechanical & Practical Problem-Solving",
+    "future_streams": [
+      "Science (PCM)",
+      "Mechanical / Aerospace / Electronics"
+    ],
+    "cool_careers": [
+      "Aerospace Engineer",
+      "EV / Automotive Designer",
+      "Hardware Inventor",
+      "Civil Architect"
+    ],
+    "weekend_quest": "Build a working catapult, bridge, or mini solar circuit using household items."
+  },
+  {
+    "id": "earth-guardian",
+    "name": "Climate, Space & Earth Explorer",
+    "tagline": "You care about space, oceans, clean energy, and protecting the planet.",
+    "interests": [
+      "Animals & Nature",
+      "Science & Experiments",
+      "Space & Astronomy"
+    ],
+    "strength_tag": "Systems & Environmental Curiosity",
+    "future_streams": [
+      "Science (PCM or PCB)",
+      "Geography & Environmental Studies"
+    ],
+    "cool_careers": [
+      "Astrophysicist",
+      "Climate Scientist",
+      "Renewable Energy Engineer",
+      "Marine Biologist"
+    ],
+    "weekend_quest": "Use a free stargazing app tonight to spot 3 constellations and a planet."
+  },
+  {
+    "id": "law-society",
+    "name": "Justice, History & Society Defender",
+    "tagline": "You care about fairness, history, world events, and standing up for people.",
+    "interests": [
+      "Debating & Speaking",
+      "History & World",
+      "Helping People"
+    ],
+    "strength_tag": "Critical Reasoning & Ethical Analysis",
+    "future_streams": [
+      "Humanities (Political Science, History, Legal Studies)"
+    ],
+    "cool_careers": [
+      "Lawyer / Judge",
+      "Civil Services Officer",
+      "Diplomat",
+      "Policy Researcher"
+    ],
+    "weekend_quest": "Pick a rule at school or in your city and write arguments both FOR and AGAINST it."
+  }
+]

@@ -1,6 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Direction Finder</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -49,7 +52,9 @@
     --studio-ink-2: #8f9bbd;
     color-scheme: dark;
   }
+  html { min-height: 100%; }
   body {
+    margin: 0; min-height: 100vh;
     background-color: var(--studio-bg);
     background-image: radial-gradient(ellipse 80% 55% at 50% 28%, var(--studio-glow), transparent 72%);
     background-repeat: no-repeat;
@@ -257,7 +262,8 @@
     .device .bar > i, .ring-fg { transition: none; }
   }
 </style>
-
+</head>
+<body>
 <div id="root"></div>
 
 <script id="logic">
@@ -594,39 +600,16 @@ function localReply(q, selected, results) {
   return 'I can chat more freely when Claude access is on. For now, I can talk about your results. Your top match is ' + t1.name + '. ' + t1.tagline + ' Try asking about Class 9 subjects, careers, a weekend project, or study tips.';
 }
 
-function buildPrompt(selected, results, history) {
-  const dataset = DATA.directions.map(function (d) {
-    return '- ' + d.name + ' | ' + d.tagline + ' | strength: ' + d.strength_tag + ' | streams: ' + d.future_streams.join('; ') + ' | careers: ' + d.cool_careers.join('; ') + ' | weekend quest: ' + d.weekend_quest;
-  }).join('\n');
-  const top = results.top3.map(function (r, i) {
-    return (i + 1) + '. ' + r.d.name + ' (matched interests: ' + (r.matched.length ? r.matched.join(', ') : 'none') + ')';
-  }).join('\n');
-  const prior = history.slice(0, -1).slice(-12).map(function (m) {
-    return (m.role === 'user' ? 'Student: ' : 'Mentor: ') + m.text;
-  }).join('\n');
-  const question = history[history.length - 1].text;
-  return [
-    'You are "Direction Mentor", a warm, curious AI buddy for a Grade 8 student in India (about 13 years old). Chat the way a friendly everyday AI assistant does.',
-    '',
-    'STYLE: Natural conversation in simple words. Encouraging, never talking down. Match your length to the message: a casual line gets 1 to 3 sentences, while a how-to or explanation can run up to about 200 words. Short paragraphs, or a short dash list when it helps. No emojis and no markdown headings. Ask a friendly follow-up question when it keeps the chat going.',
-    'SCOPE: You can talk about anything suitable for a 13-year-old: school subjects and homework help, study and exam tips, hobbies, books, games, tech, science, careers, friends, feelings about school, or just casual talk. Use the student results below as background when it helps, for example when they ask what to study, what to try, or what they are good at. Do not force every answer back to the results.',
-    'SAFETY: Keep everything age-appropriate. For serious worries, health, legal or money matters, give only basic safe advice and suggest talking to a parent, teacher or another trusted adult. If the student seems upset or unsafe, respond kindly and encourage them to reach out to a trusted adult. Never promise exam, career or admission outcomes. Say so honestly when you are not sure.',
-    '',
-    'STUDENT RESULTS (background)',
-    'Interests picked: ' + selected.join(', '),
-    'Quiz score: ' + results.score + '/' + results.total,
-    'Quiz by topic: ' + results.detail.join('; '),
-    'Strengths shown by correct answers: ' + (results.strengths.length ? results.strengths.join(', ') : 'none yet'),
-    'Top 3 matched directions:',
-    top,
-    '',
-    'DIRECTIONS IN THE APP (reference you can use and build on)',
-    dataset,
-    '',
-    prior ? 'CONVERSATION SO FAR\n' + prior + '\n' : '',
-    'Student: ' + question,
-    'Mentor:'
-  ].join('\n');
+/* The prompt is built on the server (api/chat.js). The browser only sends this summary. */
+function chatContext(selected, results) {
+  return {
+    interests: selected,
+    score: results.score,
+    total: results.total,
+    detail: results.detail,
+    strengths: results.strengths,
+    top3: results.top3.map(function (r) { return { name: r.d.name, matched: r.matched }; })
+  };
 }
 </script>
 
@@ -900,7 +883,7 @@ function Chat({ messages, busy, live, onBack, onSend }) {
       right=${html`<div className="glass" style=${{ width: 40, height: 40, borderRadius: 14, display: 'grid', placeItems: 'center', color: 'var(--blue)' }}><${Icon} name="Bot" size=${20} /></div>`} />
     <div className="scroll" style=${{ padding: '4px 20px 8px' }} aria-live="polite">
       <div style=${{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        ${live === false ? html`<div className="glass" style=${{ borderRadius: 14, padding: '10px 12px', fontSize: 12, lineHeight: 1.45, color: 'var(--text-2)' }}>Claude access is off, so I am using built-in answers. Allow access when the page asks, or reload, to chat freely.</div>` : null}
+        ${live === false ? html`<div className="glass" style=${{ borderRadius: 14, padding: '10px 12px', fontSize: 12, lineHeight: 1.45, color: 'var(--text-2)' }}>The AI mentor could not be reached. Check the connection and try again.</div>` : null}
         ${messages.map(function (m, k) {
           return html`<div key=${k} className=${'bub ' + (m.role === 'user' ? 'me' : 'ai glass')}>
             ${m.pending && !m.text ? html`<span className="dots" aria-label="Mentor is typing"><span></span><span></span><span></span></span>` : m.text}
@@ -938,11 +921,7 @@ function App() {
 
   useEffect(() => {
     let off = false;
-    try {
-      const c = window.claude;
-      if (c && c.use) c.use('sample').then(function (x) { if (!off && !x) setLive(false); }).catch(function () { if (!off) setLive(false); });
-      else setLive(false);
-    } catch (e) { setLive(false); }
+    fetch('/api/chat').then(function (r) { return r.json(); }).then(function (j) { if (!off && !(j && j.configured)) setLive(false); }).catch(function () { if (!off) setLive(false); });
     return () => { off = true; };
   }, []);
 
@@ -968,22 +947,35 @@ function App() {
     const setLast = function (t, pending) {
       setMessages(function (m) { const c = m.slice(); c[c.length - 1] = { role: 'assistant', text: t, pending: !!pending }; return c; });
     };
-    try {
-      const sample = window.claude && window.claude.use ? await window.claude.use('sample') : null;
-      if (!sample) throw { code: 'unavailable' };
-      const res = await sample(buildPrompt(selected, results, history), {
-        cache: false,
-        onText: function (o) { if (o && o.text && o.text !== 'Thinking...') setLast(o.text, true); }
-      });
+    const payload = JSON.stringify({ context: chatContext(selected, results), messages: history.slice(-12) });
+    const call = async function () {
+      const r = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+      if (r.status === 429) throw { code: 'rate_limited' };
+      if (r.status === 503) throw { code: 'not_configured' };
+      if (!r.ok) throw { code: 'unavailable' };
+      const res = await r.json();
       const out = (res && res.text ? res.text : '').trim();
+      if (!out) throw { code: 'unavailable' };
+      return out;
+    };
+    try {
+      let out;
+      try { out = await call(); }
+      catch (e1) {
+        if (e1 && (e1.code === 'rate_limited' || e1.code === 'not_configured')) throw e1;
+        await new Promise(function (ok) { setTimeout(ok, 900); });
+        out = await call();
+      }
       setLive(true);
-      setLast(out || localReply(text, selected, results), false);
+      setLast(out, false);
     } catch (e) {
+      setLive(false);
       if (e && e.code === 'rate_limited') {
         setLast('I am getting a lot of questions at once. Give me a few seconds and ask again.', false);
+      } else if (e && e.code === 'not_configured') {
+        setLast('The AI mentor is not switched on yet. The owner needs to add the API key on the server.', false);
       } else {
-        setLive(false);
-        setLast(localReply(text, selected, results), false);
+        setLast('I could not reach the AI just now. Check the internet connection and tap your question again.', false);
       }
     } finally {
       setBusy(false);
@@ -1021,5 +1013,5 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(html`<${App} />`);
 </script>
-
-</body></html>
+</body>
+</html>

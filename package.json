@@ -1,0 +1,7 @@
+{
+  "name": "direction-finder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Grade 8 Student Direction and Strengths Finder",
+  "engines": { "node": ">=18" }
+}
